@@ -1,0 +1,18 @@
+name: TODO-action-name
+description: "TODO: one-sentence description of what this action does."
+inputs:
+  example-input:
+    required: true
+    description: "TODO: describe the input. Mark required true/false per actual use."
+# If your action emits DYNAMIC outputs via core.setOutput() (one per id discovered
+# at runtime), delete the `outputs:` block entirely — GitHub Actions rejects an
+# empty outputs: mapping but is happy with no block at all. core.setOutput()
+# works regardless of declaration in action.yml.
+outputs:
+  example-output:
+    description: "TODO: describe the output."
+runs:
+  # node24 matches `bun build --target node` in package.json's build script.
+  # If you change one, change the other.
+  using: node24
+  main: dist/index.js
