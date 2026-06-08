@@ -1,16 +1,66 @@
-name: TODO-action-name
-description: "TODO: one-sentence description of what this action does."
+name: pr-git-notes
+description: >-
+  Surface git-notes attached to PR commits as a check-run, with check-button
+  write-back. Dual-mode: on `pull_request` events (Mode α) it fetches
+  `refs/notes/*`, walks the PR's commits, and renders each commit's note as a
+  check-run annotation; on `check_run.requested_action` events (Mode β) it
+  handles a reviewer's button click, writes a note back to the targeted commit,
+  and pushes the notes ref to origin. The mode is selected at runtime from
+  `GITHUB_EVENT_NAME` — one job wired to both event types runs whichever
+  handler matches the firing event. Consumers reference only the outputs that
+  fire for the event their job ran on (see per-output notes below).
 inputs:
-  example-input:
-    required: true
-    description: "TODO: describe the input. Mark required true/false per actual use."
-# If your action emits DYNAMIC outputs via core.setOutput() (one per id discovered
-# at runtime), delete the `outputs:` block entirely — GitHub Actions rejects an
-# empty outputs: mapping but is happy with no block at all. core.setOutput()
-# works regardless of declaration in action.yml.
+  github-token:
+    required: false
+    default: ${{ github.token }}
+    description: >-
+      Token used for the Checks API and the `refs/notes/*` push. Needs
+      `checks: write` for both modes, plus `contents: write` for Mode β's
+      notes-ref push (`contents: read` suffices for Mode α alone). Resolution
+      order: explicit input → `GITHUB_TOKEN` env var. Pass explicitly only when
+      a custom PAT is required (e.g. to escape `GITHUB_TOKEN` workflow-chaining
+      limits on the Mode β button click).
+  notes-ref:
+    required: false
+    default: refs/notes/commits
+    description: >-
+      Which git-notes namespace to surface and write back to. Multiple
+      instances of the action can target distinct refs (e.g.
+      `refs/notes/review-notes` + `refs/notes/deploy-notes`) to keep concerns
+      separate.
+  buttons:
+    required: false
+    default: ack,resolved
+    description: >-
+      Comma-separated check-run action-button identifiers offered in Mode α and
+      handled in Mode β (e.g. `ack,resolved`). Each becomes a clickable button
+      on the check run; the clicked identifier is reported back as the
+      `action-identifier` output. Set to an empty string to disable Mode β
+      (read-only — no buttons, no write-back).
+  check-name:
+    required: false
+    default: git-notes
+    description: >-
+      Name of the check run created or updated in Mode α. Distinct values
+      produce independent checks, so multiple action instances on one PR don't
+      collide.
 outputs:
-  example-output:
-    description: "TODO: describe the output."
+  noted-commit-count:
+    description: >-
+      Emitted in Mode α only. Number of commits in the PR that carry a note in
+      `notes-ref` (integer as a string).
+  check-run-id:
+    description: >-
+      Emitted in Mode α only. ID of the check run created or updated for this
+      PR.
+  acted-on-sha:
+    description: >-
+      Emitted in Mode β only. The commit SHA the clicked button targeted (the
+      check run's `head_sha`).
+  action-identifier:
+    description: >-
+      Emitted in Mode β only. Which button identifier the reviewer clicked
+      (one of the `buttons` values, e.g. `ack` / `resolved`).
 runs:
   # node24 matches `bun build --target node` in package.json's build script.
   # If you change one, change the other.
