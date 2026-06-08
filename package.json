@@ -1,6 +1,6 @@
 {
 	"name": "pr-git-notes",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Surface git-notes attached to PR commits as a check-run, with check-button write-back.",
 	"private": false,
 	"type": "module",
