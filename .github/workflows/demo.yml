@@ -1,0 +1,41 @@
+name: demo
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  check_run:
+    types: [requested_action]
+
+permissions:
+  contents: write # Mode β pushes refs/notes/*
+  checks: write # Mode α creates the check run
+  pull-requests: read # both modes read PR metadata
+
+jobs:
+  # Mode α — surface git-notes on the PR's commits as a check run.
+  surface:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # full history so base..head note walk is complete
+      - id: notes
+        uses: andrewtoelle/pr-git-notes@v0.1.0
+      - run: |
+          echo "noted-commit-count=${{ steps.notes.outputs.noted-commit-count }}"
+          echo "check-run-id=${{ steps.notes.outputs.check-run-id }}"
+
+  # Mode β — a reviewer clicked a check-run button; write a note back.
+  writeback:
+    if: github.event_name == 'check_run'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: notes
+        uses: andrewtoelle/pr-git-notes@v0.1.0
+      - run: |
+          echo "acted-on-sha=${{ steps.notes.outputs.acted-on-sha }}"
+          echo "action-identifier=${{ steps.notes.outputs.action-identifier }}"
